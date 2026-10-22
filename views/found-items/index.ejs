@@ -1,0 +1,5 @@
+<%- include('../partials/header') %>
+<div class="page-heading"><div><p class="eyebrow">Reports from MongoDB</p><h1>Found items</h1></div><a class="button" href="/found-items/new">Report found item</a></div>
+<% if (!items.length) { %><section class="empty"><h2>No found items have been reported yet.</h2><p>Be the first to report an item found on campus.</p><a href="/found-items/new">Report a found item →</a></section><% } %>
+<section class="item-grid"><% items.forEach(item => { %><article class="card"><span class="badge <%= item.status === 'Returned' ? 'returned' : '' %>"><%= item.status %></span><h2><%= item.itemName %></h2><p><strong>Category:</strong> <%= item.category %></p><p><strong>Found at:</strong> <%= item.foundLocation %></p><p><strong>Reported by:</strong> <%= item.reportedBy.fullName %></p><a href="/found-items/<%= item._id %>">View details →</a></article><% }) %></section>
+<%- include('../partials/footer') %>

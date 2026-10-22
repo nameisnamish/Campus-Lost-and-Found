@@ -1,0 +1,14 @@
+<%- include('../partials/header') %>
+<section class="panel">
+  <p class="eyebrow">Student profiles</p>
+  <h1>Create a student profile</h1>
+  <% if (error) { %><p class="alert error"><%= error %></p><% } %>
+  <form method="post" action="/students" class="form-grid">
+    <label>Full name<input name="fullName" value="<%= form.fullName || '' %>" required></label>
+    <label>College email<input type="email" name="email" value="<%= form.email || '' %>" required></label>
+    <label>Department<input name="department" value="<%= form.department || '' %>" required></label>
+    <label>Contact number<input name="contactNumber" value="<%= form.contactNumber || '' %>" required></label>
+    <button class="button" type="submit">Create profile</button>
+  </form>
+</section>
+<%- include('../partials/footer') %>

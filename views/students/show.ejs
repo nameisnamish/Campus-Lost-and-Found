@@ -1,0 +1,13 @@
+<%- include('../partials/header') %>
+<section class="panel">
+  <p class="eyebrow">Student profile</p>
+  <h1><%= student.fullName %></h1>
+  <dl class="details">
+    <dt>College email</dt><dd><%= student.email %></dd>
+    <dt>Department</dt><dd><%= student.department %></dd>
+    <dt>Contact number</dt><dd><%= student.contactNumber %></dd>
+    <dt>Student ID</dt><dd class="mono"><%= student._id %></dd>
+  </dl>
+  <p class="hint">Use this Student ID when reporting an item.</p>
+</section>
+<%- include('../partials/footer') %>

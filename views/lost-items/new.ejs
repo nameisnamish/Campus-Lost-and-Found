@@ -1,0 +1,21 @@
+<%- include('../partials/header') %>
+<section class="panel">
+  <p class="eyebrow">Lost-item reports</p>
+  <h1>Report a lost item</h1>
+  <% if (error) { %><p class="alert error"><%= error %></p><% } %>
+  <% if (!students.length) { %>
+    <p class="alert">Create a student profile before reporting an item.</p>
+    <a class="button" href="/students/new">Create student profile</a>
+  <% } else { %>
+  <form method="post" action="/lost-items" class="form-grid">
+    <label>Item name<input name="itemName" value="<%= form.itemName || '' %>" required></label>
+    <label>Category<input name="category" value="<%= form.category || '' %>" placeholder="e.g. Electronics" required></label>
+    <label class="full">Description<textarea name="description" required><%= form.description || '' %></textarea></label>
+    <label>Last-seen location<input name="lastSeenLocation" value="<%= form.lastSeenLocation || '' %>" required></label>
+    <label>Date lost<input type="date" name="dateLost" value="<%= form.dateLost || '' %>" required></label>
+    <label class="full">Reported by<select name="reportedBy" required><option value="">Select a student</option><% students.forEach(student => { %><option value="<%= student._id %>" <%= String(form.reportedBy) === String(student._id) ? 'selected' : '' %>><%= student.fullName %> (<%= student.email %>)</option><% }) %></select></label>
+    <button class="button" type="submit">Save lost report</button>
+  </form>
+  <% } %>
+</section>
+<%- include('../partials/footer') %>

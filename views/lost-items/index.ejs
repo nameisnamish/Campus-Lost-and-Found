@@ -1,0 +1,6 @@
+<%- include('../partials/header') %>
+<div class="page-heading"><div><p class="eyebrow">Reports from MongoDB</p><h1>Lost items</h1></div><a class="button" href="/lost-items/new">Report lost item</a></div>
+<form method="get" action="/lost-items" class="search"><input name="search" value="<%= search %>" placeholder="Search item, category, or location"><button class="button secondary" type="submit">Search</button></form>
+<% if (!items.length) { %><section class="empty"><h2>No lost items found.</h2><p>Try another search or report a lost item.</p></section><% } %>
+<section class="item-grid"><% items.forEach(item => { %><article class="card"><span class="badge"><%= item.status %></span><h2><%= item.itemName %></h2><p><strong>Category:</strong> <%= item.category %></p><p><strong>Last seen:</strong> <%= item.lastSeenLocation %></p><p><strong>Reported by:</strong> <%= item.reportedBy.fullName %></p><a href="/lost-items/<%= item._id %>">View details →</a></article><% }) %></section>
+<%- include('../partials/footer') %>

@@ -1,0 +1,7 @@
+<%- include('../partials/header') %>
+<section class="panel">
+  <span class="badge <%= item.status === 'Returned' ? 'returned' : '' %>"><%= item.status %></span><h1><%= item.itemName %></h1>
+  <dl class="details"><dt>Category</dt><dd><%= item.category %></dd><dt>Description</dt><dd><%= item.description %></dd><dt>Found at</dt><dd><%= item.foundLocation %></dd><dt>Date found</dt><dd><%= item.dateFound.toLocaleDateString() %></dd><dt>Reported by</dt><dd><a href="/students/<%= item.reportedBy._id %>"><%= item.reportedBy.fullName %></a></dd></dl>
+  <p class="hint">Claim submission and approval will be added in Phase 2.</p>
+</section>
+<%- include('../partials/footer') %>

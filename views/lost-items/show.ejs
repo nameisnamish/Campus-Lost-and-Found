@@ -1,0 +1,6 @@
+<%- include('../partials/header') %>
+<section class="panel">
+  <span class="badge"><%= item.status %></span><h1><%= item.itemName %></h1>
+  <dl class="details"><dt>Category</dt><dd><%= item.category %></dd><dt>Description</dt><dd><%= item.description %></dd><dt>Last seen</dt><dd><%= item.lastSeenLocation %></dd><dt>Date lost</dt><dd><%= item.dateLost.toLocaleDateString() %></dd><dt>Reported by</dt><dd><a href="/students/<%= item.reportedBy._id %>"><%= item.reportedBy.fullName %></a></dd></dl>
+</section>
+<%- include('../partials/footer') %>
