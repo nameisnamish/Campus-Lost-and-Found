@@ -2,12 +2,20 @@ require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
+const methodOverride = require('method-override');
 const path = require('path');
 
 const Student = require('./models/Student');
 const LostItem = require('./models/LostItem');
 const FoundItem = require('./models/FoundItem');
-const { getValidationMessage, isValidObjectId, requiredText } = require('./lib/validation');
+const Claim = require('./models/Claim');
+const {
+  getValidationMessage,
+  isValidObjectId,
+  requiredText,
+  validDateInput,
+  validPhoneNumber
+} = require('./lib/validation');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,6 +23,7 @@ const port = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: false }));
+app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 function renderError(res, status, message) {
@@ -39,13 +48,16 @@ app.get('/students/new', (req, res) => {
 
 app.post('/students', async (req, res) => {
   const form = {
-    fullName: req.body.fullName,
-    email: req.body.email,
-    department: req.body.department,
-    contactNumber: req.body.contactNumber
+    fullName: typeof req.body.fullName === 'string' ? req.body.fullName.trim() : '',
+    email: typeof req.body.email === 'string' ? req.body.email.trim() : '',
+    department: typeof req.body.department === 'string' ? req.body.department.trim() : '',
+    contactNumber: typeof req.body.contactNumber === 'string' ? req.body.contactNumber.trim() : ''
   };
 
   try {
+    if (!validPhoneNumber(form.contactNumber)) {
+      throw Object.assign(new Error('Contact number must contain exactly 10 digits.'), { status: 400 });
+    }
     const student = await Student.create(form);
     res.redirect(`/students/${student._id}`);
   } catch (error) {
@@ -90,8 +102,9 @@ app.post('/lost-items', async (req, res) => {
       throw Object.assign(new Error('The reporting student does not exist.'), { status: 400 });
     }
     if (!requiredText(form.itemName) || !requiredText(form.category) ||
-        !requiredText(form.description) || !requiredText(form.lastSeenLocation)) {
-      throw Object.assign(new Error('All lost-item fields are required.'), { status: 400 });
+        !requiredText(form.description) || !requiredText(form.lastSeenLocation) ||
+        !validDateInput(form.dateLost)) {
+      throw Object.assign(new Error('Enter valid lost-item details and a date that is not in the future.'), { status: 400 });
     }
     const item = await LostItem.create({ ...form, dateLost: dateValue(form.dateLost) });
     res.redirect(`/lost-items/${item._id}`);
@@ -159,8 +172,9 @@ app.post('/found-items', async (req, res) => {
       throw Object.assign(new Error('The reporting student does not exist.'), { status: 400 });
     }
     if (!requiredText(form.itemName) || !requiredText(form.category) ||
-        !requiredText(form.description) || !requiredText(form.foundLocation)) {
-      throw Object.assign(new Error('All found-item fields are required.'), { status: 400 });
+        !requiredText(form.description) || !requiredText(form.foundLocation) ||
+        !validDateInput(form.dateFound)) {
+      throw Object.assign(new Error('Enter valid found-item details and a date that is not in the future.'), { status: 400 });
     }
     const item = await FoundItem.create({ ...form, dateFound: dateValue(form.dateFound) });
     res.redirect(`/found-items/${item._id}`);
@@ -193,7 +207,122 @@ app.get('/found-items/:id', async (req, res) => {
     if (!item) {
       return renderError(res, 404, 'Found-item report not found.');
     }
-    return res.render('found-items/show', { title: item.itemName, item });
+    const claims = await Claim.find({ foundItemId: item._id })
+      .populate('claimedBy')
+      .sort({ createdAt: -1 });
+    const students = await Student.find().sort({ fullName: 1 });
+    return res.render('found-items/show', {
+      title: item.itemName,
+      item,
+      claims,
+      students,
+      error: null,
+      success: req.query.success || null
+    });
+  } catch (error) {
+    return renderError(res, 500, getValidationMessage(error));
+  }
+});
+
+app.post('/found-items/:id/claims', async (req, res) => {
+  const { claimedBy, reason } = req.body;
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return renderError(res, 400, 'The found-item ID is invalid.');
+    }
+    if (!isValidObjectId(claimedBy)) {
+      return renderError(res, 400, 'The claiming student ID is invalid.');
+    }
+    if (!requiredText(reason) || reason.trim().length < 10 || reason.trim().length > 1000) {
+      return renderError(res, 400, 'Claim reason must contain between 10 and 1000 characters.');
+    }
+
+    const [item, student, existingClaim] = await Promise.all([
+      FoundItem.findById(req.params.id),
+      Student.findById(claimedBy),
+      Claim.findOne({ foundItemId: req.params.id, claimedBy })
+    ]);
+    if (!item) {
+      return renderError(res, 404, 'Found-item report not found.');
+    }
+    if (!student) {
+      return renderError(res, 404, 'Claiming student not found.');
+    }
+    if (item.status === 'Returned') {
+      return renderError(res, 409, 'This item has already been returned and cannot be claimed.');
+    }
+    if (existingClaim) {
+      return renderError(res, 409, 'This student has already submitted a claim for this item.');
+    }
+
+    await Claim.create({ foundItemId: item._id, claimedBy: student._id, reason: reason.trim() });
+    return res.redirect(`/found-items/${item._id}?success=Claim submitted and is pending review.`);
+  } catch (error) {
+    if (error.code === 11000) {
+      return renderError(res, 409, 'This student has already submitted a claim for this item.');
+    }
+    return renderError(res, 500, getValidationMessage(error));
+  }
+});
+
+app.patch('/claims/:id/status', async (req, res) => {
+  const { status, reviewerId } = req.body;
+  try {
+    if (!isValidObjectId(req.params.id) || !isValidObjectId(reviewerId)) {
+      return renderError(res, 400, 'The claim or reviewer ID is invalid.');
+    }
+    if (!['Approved', 'Rejected'].includes(status)) {
+      return renderError(res, 400, 'Claim status must be Approved or Rejected.');
+    }
+
+    const claim = await Claim.findById(req.params.id);
+    if (!claim) {
+      return renderError(res, 404, 'Claim not found.');
+    }
+    const item = await FoundItem.findById(claim.foundItemId);
+    if (!item) {
+      return renderError(res, 404, 'The found item linked to this claim was not found.');
+    }
+    if (String(item.reportedBy) !== String(reviewerId)) {
+      return renderError(res, 403, 'Only the student who reported this item can review its claims.');
+    }
+    if (claim.status !== 'Pending') {
+      return renderError(res, 409, 'Only pending claims can be reviewed.');
+    }
+    if (status === 'Approved' && item.status === 'Returned') {
+      return renderError(res, 409, 'This item has already been returned.');
+    }
+
+    if (status === 'Approved') {
+      const returnedItem = await FoundItem.findOneAndUpdate(
+        { _id: item._id, status: 'Available' },
+        { $set: { status: 'Returned' } },
+        { new: true }
+      );
+      if (!returnedItem) {
+        return renderError(res, 409, 'This item has already been returned.');
+      }
+      const approvedClaim = await Claim.findOneAndUpdate(
+        { _id: claim._id, status: 'Pending' },
+        { $set: { status: 'Approved' } },
+        { new: true }
+      );
+      if (!approvedClaim) {
+        await FoundItem.updateOne({ _id: item._id }, { $set: { status: 'Available' } });
+        return renderError(res, 409, 'This claim was already reviewed.');
+      }
+      await Claim.updateMany(
+        { foundItemId: item._id, status: 'Pending', _id: { $ne: claim._id } },
+        { $set: { status: 'Rejected' } }
+      );
+    } else {
+      await Claim.findOneAndUpdate(
+        { _id: claim._id, status: 'Pending' },
+        { $set: { status: 'Rejected' } }
+      );
+    }
+
+    return res.redirect(`/found-items/${item._id}?success=Claim ${status.toLowerCase()} successfully.`);
   } catch (error) {
     return renderError(res, 500, getValidationMessage(error));
   }

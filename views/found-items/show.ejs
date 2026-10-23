@@ -2,6 +2,38 @@
 <section class="panel">
   <span class="badge <%= item.status === 'Returned' ? 'returned' : '' %>"><%= item.status %></span><h1><%= item.itemName %></h1>
   <dl class="details"><dt>Category</dt><dd><%= item.category %></dd><dt>Description</dt><dd><%= item.description %></dd><dt>Found at</dt><dd><%= item.foundLocation %></dd><dt>Date found</dt><dd><%= item.dateFound.toLocaleDateString() %></dd><dt>Reported by</dt><dd><a href="/students/<%= item.reportedBy._id %>"><%= item.reportedBy.fullName %></a></dd></dl>
-  <p class="hint">Claim submission and approval will be added in Phase 2.</p>
+  <% if (success) { %><p class="alert success"><%= success %></p><% } %>
+  <% if (item.status !== 'Returned') { %>
+    <h2>Submit a claim</h2>
+    <% if (!students.length) { %><p class="hint">A student profile is required to submit a claim.</p><% } else { %>
+    <form method="post" action="/found-items/<%= item._id %>/claims" class="form-grid">
+      <label class="full">Claiming student<select name="claimedBy" required><option value="">Select a student</option><% students.forEach(student => { %><option value="<%= student._id %>"><%= student.fullName %> (<%= student.email %>)</option><% }) %></select></label>
+      <label class="full">Why does this item belong to you?<textarea name="reason" minlength="10" maxlength="1000" required></textarea></label>
+      <button class="button" type="submit">Submit claim</button>
+    </form>
+    <% } %>
+  <% } else { %><p class="hint">This item has been returned. New claims are no longer accepted.</p><% } %>
+</section>
+<section class="panel">
+  <h2>Claims for this item</h2>
+  <% if (!claims.length) { %><p class="hint">No claims have been submitted yet.</p><% } %>
+  <% claims.forEach(claim => { %>
+    <article class="claim">
+      <span class="badge <%= claim.status === 'Approved' ? 'returned' : '' %>"><%= claim.status %></span>
+      <h3><%= claim.claimedBy.fullName %></h3>
+      <p><%= claim.reason %></p>
+      <p class="hint">Submitted <%= claim.createdAt.toLocaleDateString() %></p>
+      <% if (claim.status === 'Pending') { %>
+        <div class="actions">
+          <form method="post" action="/claims/<%= claim._id %>/status?_method=PATCH">
+            <input type="hidden" name="status" value="Approved"><input type="hidden" name="reviewerId" value="<%= item.reportedBy._id %>"><button class="button" type="submit">Approve</button>
+          </form>
+          <form method="post" action="/claims/<%= claim._id %>/status?_method=PATCH">
+            <input type="hidden" name="status" value="Rejected"><input type="hidden" name="reviewerId" value="<%= item.reportedBy._id %>"><button class="button secondary" type="submit">Reject</button>
+          </form>
+        </div>
+      <% } %>
+    </article>
+  <% }) %>
 </section>
 <%- include('../partials/footer') %>

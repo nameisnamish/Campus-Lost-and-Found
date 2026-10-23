@@ -4,8 +4,8 @@
   <% if (error) { %><p class="alert error"><%= error %></p><% } %>
   <% if (!students.length) { %><p class="alert">Create a student profile before reporting an item.</p><a class="button" href="/students/new">Create student profile</a><% } else { %>
   <form method="post" action="/found-items" class="form-grid">
-    <label>Item name<input name="itemName" value="<%= form.itemName || '' %>" required></label><label>Category<input name="category" value="<%= form.category || '' %>" required></label>
-    <label class="full">Description<textarea name="description" required><%= form.description || '' %></textarea></label><label>Found location<input name="foundLocation" value="<%= form.foundLocation || '' %>" required></label><label>Date found<input type="date" name="dateFound" value="<%= form.dateFound || '' %>" required></label>
+    <label>Item name<input type="text" name="itemName" value="<%= form.itemName || '' %>" maxlength="100" required></label><label>Category<input type="text" name="category" value="<%= form.category || '' %>" maxlength="50" required></label>
+    <label class="full">Description<textarea name="description" maxlength="1000" required><%= form.description || '' %></textarea></label><label>Found location<input type="text" name="foundLocation" value="<%= form.foundLocation || '' %>" maxlength="150" required></label><label>Date found<input type="date" name="dateFound" value="<%= form.dateFound || '' %>" max="<%= new Date().toISOString().slice(0, 10) %>" required></label>
     <label class="full">Reported by<select name="reportedBy" required><option value="">Select a student</option><% students.forEach(student => { %><option value="<%= student._id %>" <%= String(form.reportedBy) === String(student._id) ? 'selected' : '' %>><%= student.fullName %> (<%= student.email %>)</option><% }) %></select></label>
     <button class="button" type="submit">Save found report</button>
   </form><% } %>

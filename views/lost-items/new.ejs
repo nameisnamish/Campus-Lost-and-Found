@@ -8,11 +8,11 @@
     <a class="button" href="/students/new">Create student profile</a>
   <% } else { %>
   <form method="post" action="/lost-items" class="form-grid">
-    <label>Item name<input name="itemName" value="<%= form.itemName || '' %>" required></label>
-    <label>Category<input name="category" value="<%= form.category || '' %>" placeholder="e.g. Electronics" required></label>
-    <label class="full">Description<textarea name="description" required><%= form.description || '' %></textarea></label>
-    <label>Last-seen location<input name="lastSeenLocation" value="<%= form.lastSeenLocation || '' %>" required></label>
-    <label>Date lost<input type="date" name="dateLost" value="<%= form.dateLost || '' %>" required></label>
+    <label>Item name<input type="text" name="itemName" value="<%= form.itemName || '' %>" maxlength="100" required></label>
+    <label>Category<input type="text" name="category" value="<%= form.category || '' %>" maxlength="50" placeholder="e.g. Electronics" required></label>
+    <label class="full">Description<textarea name="description" maxlength="1000" required><%= form.description || '' %></textarea></label>
+    <label>Last-seen location<input type="text" name="lastSeenLocation" value="<%= form.lastSeenLocation || '' %>" maxlength="150" required></label>
+    <label>Date lost<input type="date" name="dateLost" value="<%= form.dateLost || '' %>" max="<%= new Date().toISOString().slice(0, 10) %>" required></label>
     <label class="full">Reported by<select name="reportedBy" required><option value="">Select a student</option><% students.forEach(student => { %><option value="<%= student._id %>" <%= String(form.reportedBy) === String(student._id) ? 'selected' : '' %>><%= student.fullName %> (<%= student.email %>)</option><% }) %></select></label>
     <button class="button" type="submit">Save lost report</button>
   </form>

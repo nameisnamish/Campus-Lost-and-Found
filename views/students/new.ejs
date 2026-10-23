@@ -4,10 +4,10 @@
   <h1>Create a student profile</h1>
   <% if (error) { %><p class="alert error"><%= error %></p><% } %>
   <form method="post" action="/students" class="form-grid">
-    <label>Full name<input name="fullName" value="<%= form.fullName || '' %>" required></label>
-    <label>College email<input type="email" name="email" value="<%= form.email || '' %>" required></label>
-    <label>Department<input name="department" value="<%= form.department || '' %>" required></label>
-    <label>Contact number<input name="contactNumber" value="<%= form.contactNumber || '' %>" required></label>
+    <label>Full name<input type="text" name="fullName" value="<%= form.fullName || '' %>" minlength="2" maxlength="100" pattern="[A-Za-z][A-Za-z.' -]*" title="Use letters, spaces, apostrophes, periods, and hyphens only" autocomplete="name" required></label>
+    <label>College email<input type="email" name="email" value="<%= form.email || '' %>" maxlength="150" autocomplete="email" required></label>
+    <label>Department<input type="text" name="department" value="<%= form.department || '' %>" maxlength="100" pattern="[A-Za-z][A-Za-z &-]*" title="Use letters, spaces, ampersands, and hyphens only" required></label>
+    <label>Contact number<input type="tel" name="contactNumber" value="<%= form.contactNumber || '' %>" inputmode="numeric" minlength="10" maxlength="10" pattern="[0-9]{10}" title="Enter exactly 10 digits" autocomplete="tel" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)" required></label>
     <button class="button" type="submit">Create profile</button>
   </form>
 </section>
